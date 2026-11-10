@@ -24,6 +24,13 @@ function compactShareText(value: string | undefined, fallback: string): string {
     return text || fallback;
 }
 
+export function formatMusicShareForPrompt(mediaData?: { musicTitle?: string; musicArtist?: string }): string {
+    const title = mediaData?.musicTitle?.trim() || "未知歌曲";
+    const artist = compactShareText(mediaData?.musicArtist, "");
+    // Keep the title-only directive intact: it is also the model's output syntax for sharing songs.
+    return `[音乐分享:${title}]${artist ? `（歌手：${artist}）` : ""}`;
+}
+
 export function formatXiaohongshuShareForPrompt(input: {
     author?: string;
     title?: string;
