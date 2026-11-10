@@ -16,49 +16,13 @@
 // 退出码非 0 = 助手重组结果与小手机不一致。
 
 import { register } from "node:module";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+register("./prompt-check-loader.mjs", import.meta.url);
 
-// weixin-cloud-sync 是 TS 且依赖浏览器侧模块，注册一个即时转译 + 桩件的加载器跑起来。
-const hooks = `
-import { readFileSync } from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { dirname, resolve as resolvePath } from "node:path";
-import ts from ${JSON.stringify(pathToFileURL(path.join(root, "node_modules/typescript/lib/typescript.js")).href)};
-
-const ROOT = ${JSON.stringify(root)};
-const EXTS = ["", ".ts", ".tsx", "/index.ts", "/index.tsx", ".mjs", ".js"];
-// Dexie 是 CJS，ESM 具名导入拿不到 default；这里只需要它能被 import 而已。
-const STUBS = { dexie: "export default class Dexie { version(){return{stores(){return{upgrade(){}}}}} table(){return{}} open(){return Promise.resolve()} }" };
-
-export async function resolve(specifier, context, next) {
-  if (STUBS[specifier]) {
-    return { url: "data:text/javascript;base64," + Buffer.from(STUBS[specifier]).toString("base64"), shortCircuit: true, format: "module" };
-  }
-  let spec = specifier;
-  if (spec.startsWith("@/")) spec = pathToFileURL(resolvePath(ROOT, spec.slice(2))).href;
-  else if (spec.startsWith(".") && context.parentURL?.startsWith("file:")) {
-    spec = pathToFileURL(resolvePath(dirname(fileURLToPath(context.parentURL)), spec)).href;
-  } else return next(specifier, context);
-  for (const ext of EXTS) {
-    try { readFileSync(fileURLToPath(spec + ext)); return { url: spec + ext, shortCircuit: true, format: "module" }; } catch {}
-  }
-  return next(specifier, context);
-}
-
-export async function load(url, context, next) {
-  if (!url.endsWith(".ts") && !url.endsWith(".tsx")) return next(url, context);
-  const out = ts.transpileModule(readFileSync(fileURLToPath(url), "utf8"), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.Preserve },
-    fileName: fileURLToPath(url),
-  }).outputText;
-  return { format: "module", shortCircuit: true, source: out };
-}
-`;
-register("data:text/javascript;base64," + Buffer.from(hooks).toString("base64"), pathToFileURL(root + "/"));
+const root = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 
 const { buildWeixinCloudPromptMessages, buildWeixinCloudPromptTemplate } =
   await import(pathToFileURL(path.join(root, "lib/weixin-cloud-sync.ts")).href);

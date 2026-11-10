@@ -10,7 +10,7 @@ import type { RecentBlock, UnifiedRecentItem } from "./short-term-assembler";
 import { readDwellingLayoutCache } from "./dwelling-storage";
 import { formatDwellingContext } from "./dwelling-engine";
 import { matchesActiveTags } from "./content-tag-utils";
-import { formatXiaohongshuShareForPrompt } from "./chat-share";
+import { formatMusicShareForPrompt, formatXiaohongshuShareForPrompt } from "./chat-share";
 import { stripStateAndInnerForPrompt } from "./prompt-sanitizer";
 import { formatPromptTimestamp, getPromptTimestampOptionsForTimeContext, resolvePromptTimeAware, type PromptTimestampOptions } from "./prompt-time";
 import { formatCharacterRelationsForPrompt } from "./character-world-storage";
@@ -1200,10 +1200,7 @@ export function formatRichMediaForHistory(msg: ChatMessage, userName: string, ch
             const artist = d?.musicArtist ? `-${d.musicArtist}` : "";
             return `[音乐:${d?.musicTitle ?? d?.label ?? "未知歌曲"}${artist}]`;
         }
-        case "music_share": {
-            const mTitle = d?.musicTitle || "未知歌曲";
-            return `[音乐分享:${mTitle}]`;
-        }
+        case "music_share": return formatMusicShareForPrompt(d);
         case "xiaohongshu_note_share":
             return formatXiaohongshuShareForPrompt({
                 author: d?.xiaohongshuAuthor,
